@@ -5,7 +5,7 @@ const LogicBuilder = () => {
     type: 'operator',
     operator: '&&',
     left: { type: 'value', value: '' },
-    right: { type: 'value', value: '' }
+    right: { type: 'value', value: '' },
   });
 
   const valueOptions = [
@@ -13,12 +13,12 @@ const LogicBuilder = () => {
     { label: 'Значение 1', value: 'value1' },
     { label: 'Значение 2', value: 'value2' },
     { label: 'Значение 3', value: 'value3' },
-    { label: 'Другое', value: 'other' }
+    { label: 'Другое', value: 'other' },
   ];
 
   const operatorOptions = [
     { label: 'И (&&)', value: '&&' },
-    { label: 'ИЛИ (||)', value: '||' }
+    { label: 'ИЛИ (||)', value: '||' },
   ];
 
   const handleOperatorChange = (node, newOperator) => {
@@ -28,15 +28,15 @@ const LogicBuilder = () => {
       if (currentNode === node) {
         return { ...currentNode, operator: newOperator };
       }
-      
+
       if (currentNode.type === 'operator') {
         return {
           ...currentNode,
           left: updateNode(currentNode.left),
-          right: updateNode(currentNode.right)
+          right: updateNode(currentNode.right),
         };
       }
-      
+
       return currentNode;
     };
 
@@ -50,15 +50,15 @@ const LogicBuilder = () => {
       if (currentNode === node) {
         return { ...currentNode, value: newValue };
       }
-      
+
       if (currentNode.type === 'operator') {
         return {
           ...currentNode,
           left: updateNode(currentNode.left),
-          right: updateNode(currentNode.right)
+          right: updateNode(currentNode.right),
         };
       }
-      
+
       return currentNode;
     };
 
@@ -74,28 +74,86 @@ const LogicBuilder = () => {
           type: 'operator',
           operator: '&&',
           left: { type: 'value', value: node.value },
-          right: { type: 'value', value: '' }
+          right: { type: 'value', value: '' },
         };
       }
-      
+
       if (currentNode.type === 'operator') {
         return {
           ...currentNode,
           left: updateNode(currentNode.left),
-          right: updateNode(currentNode.right)
+          right: updateNode(currentNode.right),
         };
       }
-      
+
       return currentNode;
     };
 
     setExpression(updateNode(expression));
   };
 
-  const renderExpression = (node, depth = 0) => {
+  const deleteNode = (nodeToDelete, parentNode, isLeftChild) => {
+    // Если пытаемся удалить корневой узел, сбрасываем его к начальному состоянию
+    if (nodeToDelete === expression) {
+      setExpression({
+        type: 'operator',
+        operator: '&&',
+        left: { type: 'value', value: '' },
+        right: { type: 'value', value: '' },
+      });
+      return;
+    }
+
+    const updateNode = (currentNode) => {
+      // Если текущий узел - родитель узла для удаления
+      if (currentNode === parentNode) {
+        // Если удаляем левый дочерний узел, заменяем его на пустое значение
+        if (isLeftChild) {
+          return {
+            ...currentNode,
+            left: { type: 'value', value: '' },
+          };
+        }
+        // Если удаляем правый дочерний узел, заменяем его на пустое значение
+        else {
+          return {
+            ...currentNode,
+            right: { type: 'value', value: '' },
+          };
+        }
+      }
+
+      // Продолжаем рекурсивный обход
+      if (currentNode.type === 'operator') {
+        return {
+          ...currentNode,
+          left: updateNode(currentNode.left),
+          right: updateNode(currentNode.right),
+        };
+      }
+
+      return currentNode;
+    };
+
+    setExpression(updateNode(expression));
+  };
+
+  const renderExpression = (
+    node,
+    depth = 0,
+    parentNode = null,
+    isLeftChild = false
+  ) => {
     if (node.type === 'value') {
       return (
-        <div style={{ marginLeft: `${depth * 20}px`, marginBottom: '10px' }}>
+        <div
+          style={{
+            marginLeft: `${depth * 20}px`,
+            marginBottom: '10px',
+            display: 'flex',
+            alignItems: 'center',
+          }}
+        >
           <select
             value={node.value}
             onChange={(e) => handleValueChange(node, e.target.value)}
@@ -107,7 +165,25 @@ const LogicBuilder = () => {
               </option>
             ))}
           </select>
-          <button onClick={() => convertToOperator(node)}>+</button>
+          <button
+            onClick={() => convertToOperator(node)}
+            style={{ marginRight: '5px', padding: '2px 5px' }}
+          >
+            +
+          </button>
+          {parentNode && (
+            <button
+              onClick={() => deleteNode(node, parentNode, isLeftChild)}
+              style={{
+                padding: '2px 5px',
+                background: '#ff6b6b',
+                color: 'white',
+                border: 'none',
+              }}
+            >
+              ×
+            </button>
+          )}
         </div>
       );
     }
@@ -115,20 +191,41 @@ const LogicBuilder = () => {
     if (node.type === 'operator') {
       return (
         <div style={{ marginLeft: `${depth * 20}px`, marginBottom: '10px' }}>
-          <select
-            value={node.operator}
-            onChange={(e) => handleOperatorChange(node, e.target.value)}
-            style={{ marginRight: '10px' }}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              marginBottom: '5px',
+            }}
           >
-            {operatorOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+            <select
+              value={node.operator}
+              onChange={(e) => handleOperatorChange(node, e.target.value)}
+              style={{ marginRight: '10px' }}
+            >
+              {operatorOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            {parentNode && (
+              <button
+                onClick={() => deleteNode(node, parentNode, isLeftChild)}
+                style={{
+                  padding: '2px 5px',
+                  background: '#ff6b6b',
+                  color: 'white',
+                  border: 'none',
+                }}
+              >
+                ×
+              </button>
+            )}
+          </div>
           <div style={{ borderLeft: '1px solid #ccc', paddingLeft: '10px' }}>
-            {renderExpression(node.left, depth + 1)}
-            {renderExpression(node.right, depth + 1)}
+            {renderExpression(node.left, depth + 1, node, true)}
+            {renderExpression(node.right, depth + 1, node, false)}
           </div>
         </div>
       );
@@ -141,21 +238,27 @@ const LogicBuilder = () => {
     if (node.type === 'value') {
       return node.value || '?';
     }
-    
+
     if (node.type === 'operator') {
-      return `(${formatExpression(node.left)} ${node.operator} ${formatExpression(node.right)})`;
+      return `(${formatExpression(node.left)} ${
+        node.operator
+      } ${formatExpression(node.right)})`;
     }
-    
+
     return '';
   };
 
   return (
     <div style={{ fontFamily: 'Arial, sans-serif', padding: '20px' }}>
       <h2>Конструктор логического выражения</h2>
-      <div style={{ marginBottom: '20px' }}>
-        {renderExpression(expression)}
-      </div>
-      <div style={{ backgroundColor: '#f5f5f5', padding: '10px', borderRadius: '4px' }}>
+      <div style={{ marginBottom: '20px' }}>{renderExpression(expression)}</div>
+      <div
+        style={{
+          backgroundColor: '#f5f5f5',
+          padding: '10px',
+          borderRadius: '4px',
+        }}
+      >
         <strong>Текущее выражение:</strong> {formatExpression(expression)}
       </div>
     </div>
