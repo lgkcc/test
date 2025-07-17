@@ -1,3 +1,66 @@
+```
+const parseExpression = (exprString) => {
+  // Удаляем все пробелы для упрощения парсинга
+  const expr = exprString.replace(/\s/g, '');
+  
+  // Рекурсивная функция парсинга
+  const parse = (subExpr) => {
+    // Базовый случай - простое значение
+    if (!subExpr.includes('&&') && !subExpr.includes('||')) {
+      return {
+        type: 'value',
+        value: subExpr
+      };
+    }
+    
+    // Находим оператор с наименьшей глубиной вложенности
+    let depth = 0;
+    let operatorPos = -1;
+    let operator = null;
+    
+    for (let i = 0; i < subExpr.length; i++) {
+      const char = subExpr[i];
+      
+      if (char === '(') depth++;
+      else if (char === ')') depth--;
+      else if (depth === 0 && (subExpr.substr(i, 2) === '&&' || subExpr.substr(i, 2) === '||')) {
+        operatorPos = i;
+        operator = subExpr.substr(i, 2);
+        break;
+      }
+    }
+    
+    // Если оператор найден
+    if (operatorPos !== -1) {
+      const left = subExpr.substr(0, operatorPos);
+      const right = subExpr.substr(operatorPos + 2);
+      
+      return {
+        type: 'operator',
+        operator: operator,
+        left: parse(left),
+        right: parse(right)
+      };
+    }
+    
+    // Если выражение в скобках, убираем их и парсим заново
+    if (subExpr[0] === '(' && subExpr[subExpr.length - 1] === ')') {
+      return parse(subExpr.substring(1, subExpr.length - 1));
+    }
+    
+    // Если ничего не распарсилось, возвращаем пустое значение
+    return {
+      type: 'value',
+      value: ''
+    };
+  };
+  
+  return parse(expr);
+};
+
+```
+
+
 ```import React, { useState } from 'react';
 
 const LogicBuilder = () => {
